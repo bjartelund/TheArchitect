@@ -17,6 +17,8 @@ builder.Services.AddHttpClient<ArchitectApiClient>(client =>
     // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
     // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
     client.BaseAddress = new("https+http://apiservice");
+    // Ollama running locally can take several minutes to respond; use a generous timeout.
+    client.Timeout = TimeSpan.FromMinutes(10);
 });
 
 var app = builder.Build();
