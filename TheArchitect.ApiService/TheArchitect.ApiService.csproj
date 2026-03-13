@@ -7,11 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\TheArchitect.ServiceDefaults\TheArchitect.ServiceDefaults.csproj"/>
+        <ProjectReference Include="..\TheArchitect.ServiceDefaults\TheArchitect.ServiceDefaults.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1"/>
+        <PackageReference Include="Aspire.Qdrant.Client" Version="13.1.2" />
+        <PackageReference Include="CommunityToolkit.Aspire.OllamaSharp" Version="13.1.1" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.13.5" />
     </ItemGroup>
 
 </Project>

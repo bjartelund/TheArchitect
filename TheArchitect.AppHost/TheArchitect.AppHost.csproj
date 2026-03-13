@@ -9,8 +9,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\TheArchitect.ApiService\TheArchitect.ApiService.csproj"/>
-        <ProjectReference Include="..\TheArchitect.Web\TheArchitect.Web.csproj"/>
+        <ProjectReference Include="..\TheArchitect.ApiService\TheArchitect.ApiService.csproj" />
+        <ProjectReference Include="..\TheArchitect.Web\TheArchitect.Web.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Aspire.Hosting.Qdrant" Version="13.1.2" />
     </ItemGroup>
 
 </Project>
