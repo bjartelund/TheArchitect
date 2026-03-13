@@ -40,6 +40,24 @@ app.MapScalarApiReference();
 
 Dictionary<Guid,List<ChatMessage>> chatHistories = new();
 
+app.MapPost("chat/{thread:Guid}", async (IChatClient chatClient,Guid thread, string question) =>
+{
+    if (!chatHistories.ContainsKey(thread))
+    {
+        return Results.BadRequest("Invalid thread id");
+    }
+    var userMessage = new ChatMessage
+    {
+        Role = ChatRole.User,
+        Contents
+         =  [ new TextContent( question)]
+    };
+    chatHistories[thread].Add(userMessage);
+    var response = await chatClient.GetResponseAsync( chatHistories[thread]);
+    chatHistories[thread].Add(response.Messages.First());
+    return Results.Ok(new ChatReply(thread,response.Text, []));
+});
+
 app.MapPost("chat", async (IChatClient chatClient,IEmbeddingGenerator<string,Embedding<float>> embeddingGenerator,QdrantClient qdrantClient, string question) =>
 {
     var thread = Guid.CreateVersion7();
