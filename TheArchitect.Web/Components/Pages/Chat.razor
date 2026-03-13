@@ -1,0 +1,117 @@
+@page "/chat"
+@rendermode InteractiveServer
+@inject ArchitectApiClient ArchitectApi
+
+<PageTitle>Chat – The Architect</PageTitle>
+
+<h1>Chat with The Architect</h1>
+<p class="text-muted">Ask questions about the Azure Well-Architected Framework. The first message uses RAG to retrieve relevant documents; follow-up messages continue the conversation.</p>
+
+<div class="chat-container mb-3">
+    @foreach (var message in _messages)
+    {
+        <div class="chat-bubble @(message.IsUser ? "chat-bubble-user" : "chat-bubble-assistant")">
+            <div class="chat-bubble-content">@message.Content</div>
+            @if (message.Sources is { Length: > 0 })
+            {
+                <details class="chat-sources mt-1">
+                    <summary class="small text-muted">Sources (@message.Sources.Length)</summary>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var source in message.Sources)
+                        {
+                            <li class="small text-muted">@source</li>
+                        }
+                    </ul>
+                </details>
+            }
+        </div>
+    }
+    @if (_isLoading)
+    {
+        <div class="chat-bubble chat-bubble-assistant">
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <em>Thinking…</em>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger">@_errorMessage</div>
+}
+
+<div class="input-group">
+    <input type="text"
+           class="form-control"
+           placeholder="Ask a question about the Azure Well-Architected Framework…"
+           @bind="_userInput"
+           @bind:event="oninput"
+           @onkeyup="HandleKeyUp"
+           disabled="@_isLoading" />
+    <button class="btn btn-primary" @onclick="SendMessage"
+            disabled="@(_isLoading || string.IsNullOrWhiteSpace(_userInput))">
+        Send
+    </button>
+    @if (_threadId.HasValue)
+    {
+        <button class="btn btn-outline-secondary" @onclick="ResetChat" disabled="@_isLoading">
+            New chat
+        </button>
+    }
+</div>
+
+@code {
+    private readonly List<ChatMessage> _messages = [];
+    private string _userInput = string.Empty;
+    private bool _isLoading;
+    private Guid? _threadId;
+    private string? _errorMessage;
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_isLoading && !string.IsNullOrWhiteSpace(_userInput))
+            await SendMessage();
+    }
+
+    private async Task SendMessage()
+    {
+        var question = _userInput.Trim();
+        if (string.IsNullOrWhiteSpace(question)) return;
+
+        _errorMessage = null;
+        _userInput = string.Empty;
+        _isLoading = true;
+        _messages.Add(new ChatMessage(question, IsUser: true, Sources: null));
+        StateHasChanged();
+
+        try
+        {
+            var reply = _threadId is null
+                ? await ArchitectApi.StartChatAsync(question)
+                : await ArchitectApi.ContinueChatAsync(_threadId.Value, question);
+
+            if (reply is not null)
+            {
+                _threadId = reply.Thread;
+                _messages.Add(new ChatMessage(reply.Text, IsUser: false, Sources: reply.Sources));
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ResetChat()
+    {
+        _messages.Clear();
+        _threadId = null;
+        _errorMessage = null;
+    }
+
+    private record ChatMessage(string Content, bool IsUser, string[]? Sources);
+}

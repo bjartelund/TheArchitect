@@ -1,7 +1,42 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Home – The Architect</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Welcome to The Architect</h1>
 
-Welcome to your new app.
+<p>
+    This application helps software architects explore the
+    <strong>Azure Well-Architected Framework</strong> using AI-powered retrieval and chat.
+</p>
+
+<div class="row mt-4 g-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <span class="bi bi-chat-dots-fill me-2" aria-hidden="true"></span>Chat
+                </h5>
+                <p class="card-text text-muted">
+                    Ask questions about the Well-Architected Framework.
+                    The first message triggers a RAG lookup against the document store;
+                    follow-up messages continue the same conversation thread.
+                </p>
+                <a href="chat" class="btn btn-primary">Open Chat</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <span class="bi bi-search me-2" aria-hidden="true"></span>Search
+                </h5>
+                <p class="card-text text-muted">
+                    Run raw vector queries against the document store to see which documents
+                    match and how strongly. You can also trigger the ingestion process from here.
+                </p>
+                <a href="search" class="btn btn-primary">Open Search</a>
+            </div>
+        </div>
+    </div>
+</div>
