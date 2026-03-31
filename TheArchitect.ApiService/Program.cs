@@ -199,7 +199,7 @@ app.MapGet("document", ([FromQuery] string path) =>
     if (!System.IO.File.Exists(fullPath))
         return Results.NotFound();
 
-    return Results.Ok(System.IO.File.ReadAllText(fullPath));
+    return Results.Text(System.IO.File.ReadAllText(fullPath), "text/plain");
 });
 
 app.MapGet("embed", async (IEmbeddingGenerator<string,Embedding<float>> embeddingGenerator,[FromQuery]string input ) =>

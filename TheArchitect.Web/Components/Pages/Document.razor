@@ -28,7 +28,7 @@ else if (_errorMessage is not null)
 else if (_content is not null)
 {
     <div class="document-content">
-        @((MarkupString)Markdown.ToHtml(_content, MarkdownPipeline))
+        @((MarkupString)RenderMarkdown(_content, Path!))
     </div>
 }
 
@@ -69,6 +69,55 @@ else if (_content is not null)
         {
             _isLoading = false;
         }
+    }
+
+    private static string RenderMarkdown(string content, string documentPath)
+    {
+        var dirPath = System.IO.Path.GetDirectoryName(documentPath)?.Replace('\\', '/') ?? string.Empty;
+
+        var document = Markdown.Parse(content, MarkdownPipeline);
+        var writer = new StringWriter();
+        var renderer = new Markdig.Renderers.HtmlRenderer(writer);
+
+        renderer.LinkRewriter = link =>
+        {
+            if (string.IsNullOrEmpty(link)
+                || link.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || link.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || link.StartsWith("//")
+                || link.StartsWith("#"))
+                return link;
+
+            var hashIdx = link.IndexOf('#');
+            var linkPath = hashIdx >= 0 ? link[..hashIdx] : link;
+            var anchor = hashIdx >= 0 ? link[hashIdx..] : string.Empty;
+
+            if (!linkPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                return link;
+
+            var combined = string.IsNullOrEmpty(dirPath)
+                ? linkPath
+                : $"{dirPath}/{linkPath}";
+
+            // Normalize path segments (handle ./ and ../)
+            var parts = combined.Split('/');
+            var normalized = new System.Collections.Generic.Stack<string>();
+            foreach (var part in parts)
+            {
+                if (part == ".." && normalized.Count > 0)
+                    normalized.Pop();
+                else if (part != "." && part != string.Empty)
+                    normalized.Push(part);
+            }
+            var resolvedPath = string.Join("/", normalized.Reverse());
+
+            return $"/document?path={Uri.EscapeDataString(resolvedPath)}{anchor}";
+        };
+
+        MarkdownPipeline.Setup(renderer);
+        renderer.Render(document);
+        writer.Flush();
+        return writer.ToString();
     }
 
     private static string? ExtractTitle(string? content)
