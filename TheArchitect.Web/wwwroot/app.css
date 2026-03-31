@@ -74,8 +74,52 @@ h1:focus {
     padding: 0.6rem 0.9rem;
     border-radius: 1rem;
     line-height: 1.5;
-    white-space: pre-wrap;
     word-break: break-word;
+}
+
+.chat-bubble-user > .chat-bubble-content {
+    white-space: pre-wrap;
+}
+
+.chat-bubble-assistant > .chat-bubble-content > :first-child,
+.chat-bubble-assistant > .chat-bubble-content > :last-child {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.chat-bubble-assistant .chat-bubble-content pre {
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.chat-bubble-assistant .chat-bubble-content code {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.875em;
+    background: #f1f3f5;
+    padding: 0.1em 0.3em;
+    border-radius: 0.2em;
+}
+
+.chat-bubble-assistant .chat-bubble-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.chat-bubble-assistant .chat-bubble-content ul,
+.chat-bubble-assistant .chat-bubble-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.chat-bubble-assistant .chat-bubble-content blockquote {
+    border-left: 3px solid #dee2e6;
+    padding-left: 0.75rem;
+    color: #6c757d;
+    margin: 0.5rem 0;
 }
 
 .chat-bubble-user {

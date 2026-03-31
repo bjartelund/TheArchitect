@@ -7,7 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\TheArchitect.ServiceDefaults\TheArchitect.ServiceDefaults.csproj"/>
+        <ProjectReference Include="..\TheArchitect.ServiceDefaults\TheArchitect.ServiceDefaults.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Markdig" Version="1.1.2" />
     </ItemGroup>
 
 </Project>
