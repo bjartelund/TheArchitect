@@ -1,6 +1,7 @@
 @page "/chat"
 @rendermode InteractiveServer
 @inject ArchitectApiClient ArchitectApi
+@using Markdig
 
 <PageTitle>Chat – The Architect</PageTitle>
 
@@ -11,7 +12,16 @@
     @foreach (var message in _messages)
     {
         <div class="chat-bubble @(message.IsUser ? "chat-bubble-user" : "chat-bubble-assistant")">
-            <div class="chat-bubble-content">@message.Content</div>
+            <div class="chat-bubble-content">
+                @if (message.IsUser)
+                {
+                    @message.Content
+                }
+                else
+                {
+                    @((MarkupString)Markdown.ToHtml(message.Content, MarkdownPipeline))
+                }
+            </div>
             @if (message.Sources is { Length: > 0 })
             {
                 <details class="chat-sources mt-1">
@@ -61,6 +71,11 @@
 </div>
 
 @code {
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
+
     private readonly List<ChatMessage> _messages = [];
     private string _userInput = string.Empty;
     private bool _isLoading;
