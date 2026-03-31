@@ -1,0 +1,85 @@
+@page "/document"
+@rendermode InteractiveServer
+@inject ArchitectApiClient ArchitectApi
+@inject NavigationManager Nav
+@using Markdig
+
+<PageTitle>@(_title ?? "Document") – The Architect</PageTitle>
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/search">Search</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(_title ?? "Document")</li>
+    </ol>
+</nav>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <span class="spinner-border" role="status" aria-hidden="true"></span>
+        <span class="visually-hidden">Loading…</span>
+    </div>
+}
+else if (_errorMessage is not null)
+{
+    <div class="alert alert-danger">@_errorMessage</div>
+}
+else if (_content is not null)
+{
+    <div class="document-content">
+        @((MarkupString)Markdown.ToHtml(_content, MarkdownPipeline))
+    </div>
+}
+
+@code {
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Path { get; set; }
+
+    private string? _content;
+    private string? _title;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Path))
+        {
+            _errorMessage = "No document path provided.";
+            _isLoading = false;
+            return;
+        }
+
+        try
+        {
+            _content = await ArchitectApi.GetDocumentAsync(Path);
+            _title = ExtractTitle(_content) ?? System.IO.Path.GetFileNameWithoutExtension(Path);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading document: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string? ExtractTitle(string? content)
+    {
+        if (content is null) return null;
+        foreach (var line in content.Split('\n'))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("# "))
+                return trimmed[2..].Trim();
+        }
+        return null;
+    }
+}

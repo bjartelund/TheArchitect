@@ -27,27 +27,18 @@ public class ArchitectApiClient(HttpClient httpClient)
             $"/search?query={Uri.EscapeDataString(query)}", cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var results = new List<SearchResultItem>();
-        var json = await response.Content.ReadFromJsonAsync<JsonElement[]>(cancellationToken: cancellationToken);
+        var results = await response.Content.ReadFromJsonAsync<SearchResultItem[]>(
+            cancellationToken: cancellationToken);
 
-        if (json is null) return results;
+        return results?.ToList() ?? [];
+    }
 
-        foreach (var item in json)
-        {
-            var score = item.TryGetProperty("score", out var scoreEl) ? scoreEl.GetSingle() : 0f;
-            var file = string.Empty;
-
-            if (item.TryGetProperty("payload", out var payload) &&
-                payload.TryGetProperty("file", out var fileEl) &&
-                fileEl.TryGetProperty("stringValue", out var stringValueEl))
-            {
-                file = stringValueEl.GetString() ?? string.Empty;
-            }
-
-            results.Add(new SearchResultItem(file, score));
-        }
-
-        return results;
+    public async Task<string?> GetDocumentAsync(string path, CancellationToken cancellationToken = default)
+    {
+        var response = await httpClient.GetAsync(
+            $"/document?path={Uri.EscapeDataString(path)}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     public async Task<string?> IngestAsync(CancellationToken cancellationToken = default)
@@ -58,6 +49,6 @@ public class ArchitectApiClient(HttpClient httpClient)
     }
 }
 
-public record ChatReply(Guid Thread, string Text, string[] Sources);
-
-public record SearchResultItem(string File, float Score);
+public record ChatReply(Guid Thread, string Text, DocumentSource[] Sources);
+public record DocumentSource(string File, string Title);
+public record SearchResultItem(string File, string Title, float Score);
