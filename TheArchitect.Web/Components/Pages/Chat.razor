@@ -29,7 +29,9 @@
                     <ul class="mb-0 mt-1">
                         @foreach (var source in message.Sources)
                         {
-                            <li class="small text-muted">@source</li>
+                            <li class="small">
+                                <a href="/document?path=@Uri.EscapeDataString(source.File)" class="text-muted">@source.Title</a>
+                            </li>
                         }
                     </ul>
                 </details>
@@ -128,5 +130,5 @@
         _errorMessage = null;
     }
 
-    private record ChatMessage(string Content, bool IsUser, string[]? Sources);
+    private record ChatMessage(string Content, bool IsUser, DocumentSource[]? Sources);
 }

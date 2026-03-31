@@ -118,7 +118,12 @@ app.MapPost("chat", async (IChatClient chatClient,IEmbeddingGenerator<string,Emb
             var finalResponse = await chatClient.GetResponseAsync( [..summaryMessages.Select(sm=> sm.Messages.First()), finalSystemMessage]);
             chatHistories[thread].Add(finalResponse.Messages.First());
     
-    return Results.Ok(new ChatReply(thread,finalResponse.Text, searchResult.Select(r=> r.Payload["file"].StringValue).ToArray()));
+    var sources = searchResult.Select(r =>
+    {
+        var file = r.Payload["file"].StringValue;
+        return new DocumentSource(file, GetDocumentTitle(file));
+    }).ToArray();
+    return Results.Ok(new ChatReply(thread, finalResponse.Text, sources));
 });
 
 
@@ -161,13 +166,40 @@ app.MapPost("ingest", async (QdrantClient qdrantClient,IEmbeddingGenerator<strin
     return Results.Ok(output.ToString());
 });
 
-app.MapGet("search", async (QdrantClient qdrantClient,IEmbeddingGenerator<string,Embedding<float>> embeddingGenerator,[FromQuery]string query ) =>
+app.MapGet("search", async (QdrantClient qdrantClient, IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator, [FromQuery] string query) =>
 {
     const string collection = "architect";
     var embedding = await embeddingGenerator.GenerateAsync(query);
     var vector = embedding.Vector.ToArray();
     var searchResult = await qdrantClient.SearchAsync(collection, vector, limit: 5);
-    return Results.Ok(searchResult);
+    var results = searchResult.Select(r =>
+    {
+        var file = r.Payload["file"].StringValue;
+        return new SearchResultDto(file, GetDocumentTitle(file), r.Score);
+    });
+    return Results.Ok(results);
+});
+
+app.MapGet("document", ([FromQuery] string path) =>
+{
+    // Reject rooted paths, traversal sequences, or paths with null bytes
+    if (string.IsNullOrEmpty(path)
+        || Path.IsPathRooted(path)
+        || path.Contains("..")
+        || path.Contains('\0'))
+        return Results.BadRequest("Invalid path");
+
+    var baseDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "well-architected"));
+    var fullPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), path));
+
+    // Ensure the resolved path stays within the allowed directory (append separator to prevent prefix attacks)
+    if (!fullPath.StartsWith(baseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        return Results.BadRequest("Invalid path");
+
+    if (!System.IO.File.Exists(fullPath))
+        return Results.NotFound();
+
+    return Results.Ok(System.IO.File.ReadAllText(fullPath));
 });
 
 app.MapGet("embed", async (IEmbeddingGenerator<string,Embedding<float>> embeddingGenerator,[FromQuery]string input ) =>
@@ -180,5 +212,22 @@ app.MapDefaultEndpoints();
 
 app.Run();
 
+static string GetDocumentTitle(string filePath)
+{
+    try
+    {
+        foreach (var line in System.IO.File.ReadLines(filePath))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("# "))
+                return trimmed[2..].Trim();
+        }
+    }
+    catch (IOException) { }
+    catch (UnauthorizedAccessException) { }
+    return Path.GetFileNameWithoutExtension(filePath);
+}
 
-public record ChatReply(Guid Thread, string Text, string[] Sources);
+public record ChatReply(Guid Thread, string Text, DocumentSource[] Sources);
+public record DocumentSource(string File, string Title);
+public record SearchResultDto(string File, string Title, float Score);
